@@ -68,6 +68,11 @@ function flattenBlocks(
           ...flattenBlocks(block.children, functions, depth + 1, maxDepth)
         );
       }
+      if (block.elseChildren) {
+        result.push(
+          ...flattenBlocks(block.elseChildren, functions, depth + 1, maxDepth)
+        );
+      }
     } else if (block.type === 'callFunction') {
       const funcBlocks = functions[block.functionId || 'func1'];
       if (funcBlocks && funcBlocks.length > 0) {

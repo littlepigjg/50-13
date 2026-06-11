@@ -75,6 +75,7 @@ export interface BlockConfig {
   hasChildren?: boolean;
   canRepeat?: boolean;
   hasNumericInput?: boolean;
+  hasElse?: boolean;
 }
 
 export interface FunctionReturnValue {
@@ -87,6 +88,7 @@ export interface ProgramBlock {
   id: string;
   type: BlockType;
   children?: ProgramBlock[];
+  elseChildren?: ProgramBlock[];
   repeatCount?: number;
   functionId?: string;
   numericValue?: number;

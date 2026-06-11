@@ -189,6 +189,13 @@ export const ProgramArea: React.FC<ProgramAreaProps> = ({
       return;
     }
 
+    if (overId.startsWith('else-container-')) {
+      const containerId = overId.replace('else-container-', '');
+      updatedBlocks = insertBlockIntoContainer(updatedBlocks, containerId, newBlock, -1, true);
+      onBlocksChange(updatedBlocks);
+      return;
+    }
+
     const targetInfo = findContainerAndIndex(updatedBlocks, overId);
     if (targetInfo) {
       if (targetInfo.isContainer) {

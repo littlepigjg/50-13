@@ -21,6 +21,7 @@ export function createBlock(type: BlockType, extras: Partial<ProgramBlock> = {})
     type === 'ifReturnStarsGte'
   ) {
     block.children = [];
+    block.elseChildren = [];
   }
 
   if (type === 'ifReturnStarsGte') {
@@ -43,6 +44,7 @@ export function cloneBlock(block: ProgramBlock): ProgramBlock {
     ...block,
     id: uuidv4(),
     children: block.children ? block.children.map(cloneBlock) : undefined,
+    elseChildren: block.elseChildren ? block.elseChildren.map(cloneBlock) : undefined,
   };
 }
 
@@ -69,6 +71,7 @@ export function removeBlockById(
     .map((b) => ({
       ...b,
       children: b.children ? removeBlockById(b.children, id) : undefined,
+      elseChildren: b.elseChildren ? removeBlockById(b.elseChildren, id) : undefined,
     }));
 }
 
@@ -84,6 +87,9 @@ export function insertBlockAfter(
       children: block.children
         ? insertBlockAfter(block.children, targetId, newBlock)
         : undefined,
+      elseChildren: block.elseChildren
+        ? insertBlockAfter(block.elseChildren, targetId, newBlock)
+        : undefined,
     });
     if (block.id === targetId) {
       result.push(newBlock);
@@ -96,22 +102,37 @@ export function insertBlockIntoContainer(
   blocks: ProgramBlock[],
   containerId: string,
   newBlock: ProgramBlock,
-  index: number = -1
+  index: number = -1,
+  targetElse: boolean = false
 ): ProgramBlock[] {
   return blocks.map((block) => {
-    if (block.id === containerId && block.children) {
-      const newChildren = [...block.children];
-      if (index >= 0 && index <= newChildren.length) {
-        newChildren.splice(index, 0, newBlock);
-      } else {
-        newChildren.push(newBlock);
+    if (block.id === containerId) {
+      if (!targetElse && block.children) {
+        const newChildren = [...block.children];
+        if (index >= 0 && index <= newChildren.length) {
+          newChildren.splice(index, 0, newBlock);
+        } else {
+          newChildren.push(newBlock);
+        }
+        return { ...block, children: newChildren };
       }
-      return { ...block, children: newChildren };
+      if (targetElse && block.elseChildren) {
+        const newElseChildren = [...block.elseChildren];
+        if (index >= 0 && index <= newElseChildren.length) {
+          newElseChildren.splice(index, 0, newBlock);
+        } else {
+          newElseChildren.push(newBlock);
+        }
+        return { ...block, elseChildren: newElseChildren };
+      }
     }
     return {
       ...block,
       children: block.children
-        ? insertBlockIntoContainer(block.children, containerId, newBlock, index)
+        ? insertBlockIntoContainer(block.children, containerId, newBlock, index, targetElse)
+        : undefined,
+      elseChildren: block.elseChildren
+        ? insertBlockIntoContainer(block.elseChildren, containerId, newBlock, index, targetElse)
         : undefined,
     };
   });
@@ -129,6 +150,7 @@ export function updateBlock(
     return {
       ...block,
       children: block.children ? updateBlock(block.children, id, updates) : undefined,
+      elseChildren: block.elseChildren ? updateBlock(block.elseChildren, id, updates) : undefined,
     };
   });
 }

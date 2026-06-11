@@ -42,6 +42,33 @@ const BlockChildrenContainer: React.FC<{
   );
 };
 
+const BlockElseContainer: React.FC<{
+  containerId: string;
+  children?: React.ReactNode;
+  isEmpty?: boolean;
+}> = ({ containerId, children, isEmpty }) => {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `else-container-${containerId}`,
+    data: { containerId, isElseContainer: true },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`
+        min-h-[40px] m-2 p-2 rounded-lg border-2 border-dashed
+        ${isOver ? 'drag-over border-orange-500' : 'border-white/30'}
+        ${isEmpty ? 'flex items-center justify-center text-white/50 text-xs' : ''}
+        transition-all duration-200
+      `}
+      style={{ backgroundColor: `rgba(251, 146, 60, 0.15)` }}
+    >
+      <div className="text-xs text-white/60 mb-1 font-bold">❌ 否则</div>
+      {isEmpty ? <span>拖入指令...</span> : children}
+    </div>
+  );
+};
+
 export const DraggableBlock: React.FC<DraggableBlockProps> = ({
   block,
   isHighlighted,
@@ -89,6 +116,7 @@ export const DraggableBlock: React.FC<DraggableBlockProps> = ({
   };
 
   const hasChildren = config.hasChildren && block.children !== undefined;
+  const hasElse = config.hasElse && block.elseChildren !== undefined;
 
   return (
     <div
@@ -222,6 +250,29 @@ export const DraggableBlock: React.FC<DraggableBlockProps> = ({
             </div>
           )}
         </BlockChildrenContainer>
+      )}
+
+      {hasElse && (
+        <BlockElseContainer
+          containerId={block.id}
+          isEmpty={!block.elseChildren || block.elseChildren.length === 0}
+        >
+          {block.elseChildren && block.elseChildren.length > 0 && (
+            <div className="space-y-0">
+              {block.elseChildren.map((child) => (
+                <DraggableBlock
+                  key={child.id}
+                  block={child}
+                  isHighlighted={isHighlighted}
+                  onDelete={onDelete}
+                  onUpdate={onUpdate}
+                  allBlocks={allBlocks}
+                  depth={depth + 1}
+                />
+              ))}
+            </div>
+          )}
+        </BlockElseContainer>
       )}
     </div>
   );

@@ -164,9 +164,23 @@ export function executeConditionBlock(
     state: ctx.state,
   };
 
-  if (evaluateCondition(block, condCtx)) {
+  const conditionResult = evaluateCondition(block, condCtx);
+
+  if (conditionResult) {
     if (block.children) {
       for (const child of block.children) {
+        const childResult = executeBlock(ctx, child, depth + 1, inFunction);
+        if (!childResult.continue) {
+          return childResult;
+        }
+        if (childResult.shouldReturnFromFunction) {
+          return childResult;
+        }
+      }
+    }
+  } else {
+    if (block.elseChildren) {
+      for (const child of block.elseChildren) {
         const childResult = executeBlock(ctx, child, depth + 1, inFunction);
         if (!childResult.continue) {
           return childResult;
