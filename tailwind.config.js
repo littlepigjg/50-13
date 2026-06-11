@@ -22,6 +22,9 @@ export default {
           loop: '#8b5cf6',
           condition: '#ef4444',
           function: '#06b6d4',
+          'return-success': '#22c55e',
+          'return-fail': '#dc2626',
+          'return-stars': '#eab308',
         },
       },
       animation: {

@@ -57,7 +57,13 @@ export type BlockType =
   | 'ifStar'
   | 'ifEmpty'
   | 'function'
-  | 'callFunction';
+  | 'callFunction'
+  | 'returnSuccess'
+  | 'returnFail'
+  | 'returnStars'
+  | 'ifReturnSuccess'
+  | 'ifReturnFail'
+  | 'ifReturnStarsGte';
 
 export interface BlockConfig {
   type: BlockType;
@@ -65,9 +71,16 @@ export interface BlockConfig {
   color: string;
   icon: string;
   description: string;
-  category: 'basic' | 'control' | 'condition' | 'function';
+  category: 'basic' | 'control' | 'condition' | 'function' | 'return';
   hasChildren?: boolean;
   canRepeat?: boolean;
+  hasNumericInput?: boolean;
+}
+
+export interface FunctionReturnValue {
+  success: boolean;
+  starsCollected: number;
+  customValue?: number;
 }
 
 export interface ProgramBlock {
@@ -76,6 +89,7 @@ export interface ProgramBlock {
   children?: ProgramBlock[];
   repeatCount?: number;
   functionId?: string;
+  numericValue?: number;
 }
 
 export interface Program {
@@ -93,6 +107,7 @@ export interface ExecutionState {
   totalSteps: number;
   error?: string;
   highlightedBlockId?: string;
+  lastReturnValue?: FunctionReturnValue;
 }
 
 export interface LevelProgress {

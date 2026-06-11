@@ -15,9 +15,16 @@ export function createBlock(type: BlockType, extras: Partial<ProgramBlock> = {})
     type === 'ifWall' ||
     type === 'ifStar' ||
     type === 'ifEmpty' ||
-    type === 'function'
+    type === 'function' ||
+    type === 'ifReturnSuccess' ||
+    type === 'ifReturnFail' ||
+    type === 'ifReturnStarsGte'
   ) {
     block.children = [];
+  }
+
+  if (type === 'ifReturnStarsGte') {
+    block.numericValue = extras.numericValue || 1;
   }
 
   if (type === 'function') {

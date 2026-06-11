@@ -40,6 +40,12 @@ const ALL_BLOCK_TYPES: BlockType[] = [
   'ifEmpty',
   'function',
   'callFunction',
+  'returnSuccess',
+  'returnFail',
+  'returnStars',
+  'ifReturnSuccess',
+  'ifReturnFail',
+  'ifReturnStarsGte',
 ];
 
 export const LevelEditor: React.FC<LevelEditorProps> = ({

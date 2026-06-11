@@ -231,6 +231,20 @@ export const GameScreen: React.FC<GameScreenProps> = ({
                 </span>
               </div>
 
+              {currentState.lastReturnValue && (
+                <div className="flex items-center gap-2 bg-cyan-50 px-4 py-2 rounded-xl">
+                  <span className="text-xl">📦</span>
+                  <div className="text-xs">
+                    <div className="font-bold text-cyan-700">函数返回值</div>
+                    <div className="text-cyan-600">
+                      {currentState.lastReturnValue.success ? '✅ 成功' : '❌ 失败'}
+                      {' | '}
+                      🌟 {currentState.lastReturnValue.starsCollected}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-center gap-2 bg-gray-100 rounded-xl px-2 py-1">
                 <span className="text-xs text-gray-500 px-2">速度</span>
                 {[200, 500, 1000].map((s) => (

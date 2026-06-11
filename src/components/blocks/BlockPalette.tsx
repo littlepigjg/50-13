@@ -52,12 +52,13 @@ interface BlockPaletteProps {
 }
 
 export const BlockPalette: React.FC<BlockPaletteProps> = ({ allowedBlocks, disabled }) => {
-  const categories = ['basic', 'control', 'condition', 'function'] as const;
+  const categories = ['basic', 'control', 'condition', 'function', 'return'] as const;
   const categoryNames: Record<string, string> = {
     basic: '基础指令',
     control: '流程控制',
     condition: '条件判断',
     function: '函数',
+    return: '返回值',
   };
 
   return (

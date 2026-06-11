@@ -30,6 +30,12 @@ const ALL_BLOCKS: BlockType[] = [
   'ifEmpty',
   'function',
   'callFunction',
+  'returnSuccess',
+  'returnFail',
+  'returnStars',
+  'ifReturnSuccess',
+  'ifReturnFail',
+  'ifReturnStarsGte',
 ];
 
 const BASIC_BLOCKS: BlockType[] = ['move', 'turnLeft', 'turnRight'];
@@ -52,6 +58,12 @@ const FUNCTION_BLOCKS: BlockType[] = [
   'ifEmpty',
   'function',
   'callFunction',
+  'returnSuccess',
+  'returnFail',
+  'returnStars',
+  'ifReturnSuccess',
+  'ifReturnFail',
+  'ifReturnStarsGte',
 ];
 
 export const LEVELS: Level[] = [

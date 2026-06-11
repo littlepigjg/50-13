@@ -2,6 +2,7 @@ import type {
   CellType,
   Direction,
   ExecutionState,
+  FunctionReturnValue,
   Level,
   Position,
   Program,
@@ -119,7 +120,10 @@ function flattenBlocks(
     } else if (
       block.type === 'ifWall' ||
       block.type === 'ifStar' ||
-      block.type === 'ifEmpty'
+      block.type === 'ifEmpty' ||
+      block.type === 'ifReturnSuccess' ||
+      block.type === 'ifReturnFail' ||
+      block.type === 'ifReturnStarsGte'
     ) {
       if (block.children) {
         result.push(
@@ -153,6 +157,12 @@ export interface ExecutionStep {
   blockId?: string;
 }
 
+interface ExecuteResult {
+  continue: boolean;
+  returnValue?: FunctionReturnValue;
+  shouldReturnFromFunction?: boolean;
+}
+
 export function generateExecutionPlan(
   level: Level,
   program: Program
@@ -179,27 +189,51 @@ export function generateExecutionPlan(
       }
       case 'ifEmpty':
         return isWalkable(level, forward);
+      case 'ifReturnSuccess':
+        return state.lastReturnValue?.success === true;
+      case 'ifReturnFail':
+        return state.lastReturnValue?.success === false;
+      case 'ifReturnStarsGte': {
+        const threshold = block.numericValue || 1;
+        return (state.lastReturnValue?.starsCollected || 0) >= threshold;
+      }
       default:
         return false;
     }
   }
 
+  function createDefaultReturnValue(): FunctionReturnValue {
+    return {
+      success: true,
+      starsCollected: state.collectedStars.length,
+    };
+  }
+
   function executeBlock(
     block: ProgramBlock,
     functions: Record<string, ProgramBlock[]>,
-    depth: number = 0
-  ): boolean {
+    depth: number = 0,
+    inFunction: boolean = false
+  ): ExecuteResult {
     if (depth > 100) {
       state.status = 'failed';
       state.error = '嵌套层数过深，可能存在无限循环';
-      return false;
+      return { continue: false };
     }
 
     state.highlightedBlockId = block.id;
     steps.push({
-      state: { ...state, robot: cloneRobotState(state.robot) },
+      state: {
+        ...state,
+        robot: cloneRobotState(state.robot),
+        lastReturnValue: state.lastReturnValue
+          ? { ...state.lastReturnValue }
+          : undefined,
+      },
       blockId: block.id,
     });
+
+    let result: ExecuteResult = { continue: true };
 
     switch (block.type) {
       case 'move': {
@@ -207,7 +241,8 @@ export function generateExecutionPlan(
         if (!isWalkable(level, nextPos)) {
           state.status = 'failed';
           state.error = '机器人撞到了障碍物！';
-          return false;
+          result = { continue: false };
+          break;
         }
         state.robot.position = nextPos;
         state.currentStep++;
@@ -227,7 +262,8 @@ export function generateExecutionPlan(
           steps.push({
             state: { ...state, robot: cloneRobotState(state.robot) },
           });
-          return false;
+          result = { continue: false };
+          break;
         }
         break;
       }
@@ -247,20 +283,40 @@ export function generateExecutionPlan(
         for (let i = 0; i < count; i++) {
           if (block.children) {
             for (const child of block.children) {
-              if (!executeBlock(child, functions, depth + 1)) return false;
+              const childResult = executeBlock(child, functions, depth + 1, inFunction);
+              if (!childResult.continue) {
+                result = { continue: false };
+                break;
+              }
+              if (childResult.shouldReturnFromFunction) {
+                result = childResult;
+                break;
+              }
             }
           }
+          if (!result.continue || result.shouldReturnFromFunction) break;
         }
         break;
       }
 
       case 'ifWall':
       case 'ifStar':
-      case 'ifEmpty': {
+      case 'ifEmpty':
+      case 'ifReturnSuccess':
+      case 'ifReturnFail':
+      case 'ifReturnStarsGte': {
         if (evaluateCondition(block, state.robot)) {
           if (block.children) {
             for (const child of block.children) {
-              if (!executeBlock(child, functions, depth + 1)) return false;
+              const childResult = executeBlock(child, functions, depth + 1, inFunction);
+              if (!childResult.continue) {
+                result = { continue: false };
+                break;
+              }
+              if (childResult.shouldReturnFromFunction) {
+                result = childResult;
+                break;
+              }
             }
           }
         }
@@ -270,9 +326,71 @@ export function generateExecutionPlan(
       case 'callFunction': {
         const funcBlocks = functions[block.functionId || 'func1'];
         if (funcBlocks) {
+          let funcReturnValue: FunctionReturnValue = createDefaultReturnValue();
+          let funcReturnedEarly = false;
+
           for (const child of funcBlocks) {
-            if (!executeBlock(child, functions, depth + 1)) return false;
+            const childResult = executeBlock(child, functions, depth + 1, true);
+            if (!childResult.continue) {
+              result = { continue: false };
+              break;
+            }
+            if (childResult.shouldReturnFromFunction && childResult.returnValue) {
+              funcReturnValue = childResult.returnValue;
+              funcReturnedEarly = true;
+              break;
+            }
           }
+
+          if (!funcReturnedEarly) {
+            funcReturnValue = createDefaultReturnValue();
+          }
+
+          state.lastReturnValue = funcReturnValue;
+        } else {
+          state.lastReturnValue = { success: false, starsCollected: 0 };
+        }
+        break;
+      }
+
+      case 'returnSuccess': {
+        if (inFunction) {
+          result = {
+            continue: true,
+            shouldReturnFromFunction: true,
+            returnValue: {
+              success: true,
+              starsCollected: state.collectedStars.length,
+            },
+          };
+        }
+        break;
+      }
+
+      case 'returnFail': {
+        if (inFunction) {
+          result = {
+            continue: true,
+            shouldReturnFromFunction: true,
+            returnValue: {
+              success: false,
+              starsCollected: state.collectedStars.length,
+            },
+          };
+        }
+        break;
+      }
+
+      case 'returnStars': {
+        if (inFunction) {
+          result = {
+            continue: true,
+            shouldReturnFromFunction: true,
+            returnValue: {
+              success: true,
+              starsCollected: state.collectedStars.length,
+            },
+          };
         }
         break;
       }
@@ -282,9 +400,15 @@ export function generateExecutionPlan(
     }
 
     steps.push({
-      state: { ...state, robot: cloneRobotState(state.robot) },
+      state: {
+        ...state,
+        robot: cloneRobotState(state.robot),
+        lastReturnValue: state.lastReturnValue
+          ? { ...state.lastReturnValue }
+          : undefined,
+      },
     });
-    return true;
+    return result;
   }
 
   const functions: Record<string, ProgramBlock[]> = {};
@@ -297,7 +421,8 @@ export function generateExecutionPlan(
   const mainBlocks = program.main.filter((b) => b.type !== 'function');
 
   for (const block of mainBlocks) {
-    if (!executeBlock(block, functions, 0)) break;
+    const execResult = executeBlock(block, functions, 0, false);
+    if (!execResult.continue) break;
   }
 
   if (state.status !== 'failed') {
@@ -315,7 +440,14 @@ export function generateExecutionPlan(
   }
 
   steps.push({
-    state: { ...state, robot: cloneRobotState(state.robot), highlightedBlockId: undefined },
+    state: {
+      ...state,
+      robot: cloneRobotState(state.robot),
+      highlightedBlockId: undefined,
+      lastReturnValue: state.lastReturnValue
+        ? { ...state.lastReturnValue }
+        : undefined,
+    },
   });
 
   return steps;

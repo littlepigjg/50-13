@@ -52,6 +52,7 @@ export const DraggableBlock: React.FC<DraggableBlockProps> = ({
 }) => {
   const config = BLOCK_CONFIGS[block.type];
   const [showRepeatInput, setShowRepeatInput] = useState(false);
+  const [showNumericInput, setShowNumericInput] = useState(false);
 
   const {
     attributes,
@@ -76,6 +77,13 @@ export const DraggableBlock: React.FC<DraggableBlockProps> = ({
   const handleRepeatChange = (value: number) => {
     if (onUpdate && allBlocks) {
       const updated = updateBlock(allBlocks, block.id, { repeatCount: value });
+      onUpdate(updated);
+    }
+  };
+
+  const handleNumericChange = (value: number) => {
+    if (onUpdate && allBlocks) {
+      const updated = updateBlock(allBlocks, block.id, { numericValue: value });
       onUpdate(updated);
     }
   };
@@ -143,6 +151,37 @@ export const DraggableBlock: React.FC<DraggableBlockProps> = ({
             <span className="text-xs bg-white/20 px-2 py-0.5 rounded flex-shrink-0">
               {block.functionId || 'func1'}
             </span>
+          )}
+
+          {block.type === 'ifReturnStarsGte' && (
+            <div className="flex items-center gap-1 flex-shrink-0">
+              {showNumericInput ? (
+                <input
+                  type="number"
+                  min={0}
+                  max={99}
+                  value={block.numericValue || 1}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e) => {
+                    const v = parseInt(e.target.value) || 0;
+                    handleNumericChange(Math.max(0, Math.min(99, v)));
+                  }}
+                  onBlur={() => setShowNumericInput(false)}
+                  className="w-12 text-xs bg-white/20 text-white rounded px-2 py-0.5 text-center border-none outline-none"
+                  autoFocus
+                />
+              ) : (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowNumericInput(true);
+                  }}
+                  className="text-xs bg-white/20 px-2 py-0.5 rounded hover:bg-white/30 transition-colors"
+                >
+                  ≥{block.numericValue || 1}
+                </button>
+              )}
+            </div>
           )}
         </div>
 
